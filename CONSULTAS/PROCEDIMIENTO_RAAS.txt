@@ -1,0 +1,68 @@
+/*EJECUTAR PROC ALMACENADO SQL*/
+--------------------------------
+USE [LEIRE_desa]
+GO
+
+DECLARE @RC int;
+DECLARE @FECHAACCESO datetime2(7);
+SET @FECHAACCESO='20171127';
+
+-- TODO: Set parameter values here.
+
+EXEC [leire].[RAAS.Auditoria.Buscar] @FECHAACCESO
+GO
+
+-------------------------------------------------------------------------------
+
+
+
+USE [LEIRE_desa]
+GO
+/****** Object:  StoredProcedure [leire].[RAAS.Auditoria.Buscar]    Script Date: 27/11/2017 13:35:02 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [leire].[RAAS.Auditoria.Buscar] 
+	(
+		@FECHAACCESO DATETIME2=null
+	)
+AS
+BEGIN
+
+	SET NOCOUNT ON;
+	/*@FECHA ACCESO FIN*/
+	DECLARE @FECHAACCESOFIN DATETIME2;
+	SET @FECHAACCESOFIN=GETDATE();--INICIALIZO LA FECHA FIN A LA DE HOY
+
+	IF (@FECHAACCESO is null)
+	BEGIN
+		RETURN;
+	END
+	
+	BEGIN
+		SELECT	Auditorias.CodigoUsuario, 
+				Auditorias.NombreUsuario, 
+				Auditorias.IP, 
+				Auditorias.NumHistoria,
+				Pacientes.TIS,
+				Pacientes.NOMBRE, 
+				Pacientes.APELLID1,
+				Pacientes.APELLID2,
+				Auditorias.FechaAcceso, 
+				Auditorias.Observaciones,			
+				Modulos.Nombre AS NOMBREMODULO,
+				Acciones.Nombre AS NOMBREACCION
+		FROM [dbo].[leire.Auditorias] Auditorias
+			LEFT JOIN [dbo].[leire.Usuarios] Usuarios ON Usuarios.IdUsuario=Auditorias.IdUsuario 
+			INNER JOIN [dbo].[leire.Acciones] Acciones ON Acciones.IDACCION = Auditorias.IDACCION
+			INNER JOIN [dbo].[leire.Modulos] Modulos ON Modulos.IDMODULO = Acciones.IDMODULO
+			LEFT JOIN [dbo].[leire.Procesos.TH971] Pacientes ON Auditorias.NumHistoria=Pacientes.NHISTOR1
+		WHERE Auditorias.FechaAcceso between @FECHAACCESO and @FECHAACCESOFIN
+		ORDER BY Auditorias.FechaAcceso DESC;    
+    END
+END;
+
+
+

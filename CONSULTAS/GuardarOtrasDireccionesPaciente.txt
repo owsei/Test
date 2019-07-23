@@ -1,0 +1,111 @@
+Refactor en el código de otras direcciones de paciente (de todas las capas)
+
+d623249:
+En presentación es muy enrevesado poder meter una modificación (por ejemplo añadir el foco) o gestionar el formulario como en el resto de código de LEIRE. 
+En bll las acciones no están gestionadas correctamente. Si se necesita se hace otro método. 
+Tiene que poder gestionarse todo con una única acción de autorización.
+En el proceso de negocio (y la entidad) gestiona si es nuevo o es inserción con un enumerado que no tiene esa utilidad.
+Separar en métodos distintos el guardado de custodia y de dirección alternativa.
+Tener en cuenta que la dirección de la custodia compartida también se usa en los avisos de citacion por pdf, en presentación, ver si el cambio conlleva modificar eso también (en detallecita.js y detallesolicitudcitas.js)
+
+
+
+
+GuardarDireccionAlternativaPaciente
+
+
+
+
+public ResultadoDTO<OtrasDireccionesPaciente> GuardarOtrasDireccionesPaciente(GuardadoOtrasDireccionesPacienteDTO datos)
+        {
+            ResultadoDTO<OtrasDireccionesPaciente> resultado = new ResultadoDTO<OtrasDireccionesPaciente>();
+
+            GuardadoOtrasDireccionesPaciente otrasDireccionesPaciente = ManejadorMapper.Instance.Map<GuardadoOtrasDireccionesPacienteDTO, GuardadoOtrasDireccionesPaciente>(datos);
+
+            GuardarOtrasDireccionesPaciente procesoGuardar = new GuardarOtrasDireccionesPaciente(otrasDireccionesPaciente);
+
+            bool CustodiaCompartida = datos.TipoDireccionGuardar.Equals(DTO.eTipoOtrasDirecciones.CustodiaCompartida);
+            bool nueva = otrasDireccionesPaciente.Tipo.Equals(eTipoOtrasDirecciones.SinDeterminar);
+            int[] acciones;
+            if (CustodiaCompartida)
+            {
+
+                acciones = new int[]
+                    {
+                            (int)eAccionPacienteGestion.ModificarHistoria,
+                            (int)eAccionPacienteGestion.ModificarDatosCustodiaCompartida
+                    };
+            }
+            else
+            {
+                acciones = new int[]
+                {
+                          (int)eAccionPacienteGestion.ModificarHistoria
+                };
+
+            }
+
+            using (ContextoPeticionTransaccional contexto = new ContextoPeticionTransaccional(datos.CodigoUsuario,
+                new ProcesoAutorizacion(acciones, datos.IdUsuario)))
+            {
+                try
+                {
+                    contexto.EjecutarProceso(procesoGuardar);
+                }
+                catch (LeireException) { }
+                catch (Exception ex)
+                {
+                    ManejadorLog.RegistrarExcepcionBLL(ex, datos.CodigoUsuario);
+                }
+                finally
+                {
+                    resultado = contexto.MapResultado<ResultadoDTO<OtrasDireccionesPaciente>>();
+                }
+            }
+            if (!resultado.EsCorrecto) return resultado;
+
+
+            PacienteFiltro filtro = new PacienteFiltro()
+            {
+                NumHistoria = datos.NumHistoria
+            };
+            RecuperarOtrasDireccionesPaciente proceso = new RecuperarOtrasDireccionesPaciente(filtro);
+
+            using (ContextoPeticion contexto = new ContextoPeticion(datos.CodigoUsuario))
+            {
+                try
+                {
+                    if (CustodiaCompartida)
+                    {
+                        if (nueva)
+                            contexto.EjecutarProcesoAuditoria(new RegistrarAuditoria(eAccionPacienteGestion.ModificarDatosCustodiaCompartida, datos.NumHistoria.ToString(), datos.CodigoUsuario, datos.IP, ResourcesAuditoria.Observaciones_NuevaDireccionCustodia));
+                        else
+                            contexto.EjecutarProcesoAuditoria(new RegistrarAuditoria(eAccionPacienteGestion.ModificarDatosCustodiaCompartida, datos.NumHistoria.ToString(), datos.CodigoUsuario, datos.IP, ResourcesAuditoria.Observaciones_ModificarDireccionCustodia));
+                        resultado.MensajesAdvertencia = resultado.MensajesAdvertencia.AddRange(contexto.Respuesta.MensajesAdvertencia);
+                    }
+                    else
+                    {
+                        if (nueva)
+                            contexto.EjecutarProcesoAuditoria(new RegistrarAuditoria(eAccionPacienteGestion.ModificarHistoria, datos.NumHistoria, datos.CodigoUsuario, datos.IP, ResourcesAuditoria.Observaciones_NuevaDireccionAlternativa));
+                        else
+                            contexto.EjecutarProcesoAuditoria(new RegistrarAuditoria(eAccionPacienteGestion.ModificarHistoria, datos.NumHistoria, datos.CodigoUsuario, datos.IP, ResourcesAuditoria.Observaciones_ModificarDireccionAlternativa));
+                        resultado.MensajesAdvertencia = resultado.MensajesAdvertencia.AddRange(contexto.Respuesta.MensajesAdvertencia);
+                    }
+                    contexto.EjecutarProceso(proceso);
+                }
+                catch (LeireException) { }
+                catch (Exception ex)
+                {
+                    ManejadorLog.RegistrarExcepcionBLL(ex, datos.CodigoUsuario);
+                }
+                finally
+                {
+                    resultado = contexto.MapResultado<ResultadoDTO<OtrasDireccionesPaciente>>();
+                }
+            }
+
+            resultado.Dato = proceso.OtrasDireccionesPaciente;
+            resultado.MensajesCorrecto.Add(ResourcesPacientes.Correcto_GuardarDireccion);
+            return resultado;
+
+        }

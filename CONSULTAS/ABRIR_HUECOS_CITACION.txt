@@ -1,0 +1,35 @@
+++++++ABRIR Y CERRAR AGENDAS DESDE SESION A++++++
+
+-Logearte en HIS con 'PCSD'
+-Escribir 'test'
+-Introducimos el usuario: 'aplcar0' - APLAIN
+-Pulsamos intro
+-Introducimos la contraseña: 'carlaB' (todo con minusculas)
+-Pulsamos control
+-Si sale pantalla de seleccion de impresora, pulsar intro o control de nuevo
+-Para abrir agendas:
+                .Pasos de menu: 1 - 11 - 3
+                .Introducimos un codigo de agenda sin su primer digito
+                .Introducimos la fecha en la que queremos abrirla
+                .Ponemos una 'S' en el primer campo
+                .Indicamos abajo si queremos que sea de mañana, tarde, o ambas
+                .Si nos requiere mas informacion al darle al control, introducir 'BL' abajo
+-Para cerrar agendas:
+                .Pasos de menu: 1 - 11 - 4
+                .Introducimos un codigo de agenda sin su primer digito
+                .Introducimos la fecha en la que queremos cerrarla
+                .Seleccionamos las opciones:
+                               + 3-Admision
+                               + S-Completo
+                .Pulsamos control
+                .Si pide mas información, poner 'P' en 'Indique el motivo de la cancelación'
+                .Si pide mas información, escribir algo en observaciones
+                .Pulsamos control
+                .Nos lleva a la siguiente pantalla, donde rellenemos las siguiente opciones:
+                               + Mover pacientes a: 0 - Nada
+                               + Remitir carta: NO
+
+----------------------------------------------
+Usuario de HIS para ver agendas de distintos complejos:
+APLBEATC
+TODOSBEA
